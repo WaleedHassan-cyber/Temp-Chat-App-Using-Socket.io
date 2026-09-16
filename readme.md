@@ -43,7 +43,7 @@ If you're looking for a lightweight reference implementation of Socket.IO + WebR
 > Add a screenshot or GIF of the app here once you have one — recruiters and stargazers judge repos by their README image in the first three seconds.
 
 ```
-public/preview.gif
+public/Preview.gif
 ```
 
 ---
