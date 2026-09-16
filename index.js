@@ -1,6 +1,7 @@
 const express = require("express");
 const http = require("http");
 const path = require("path");
+const crypto = require("crypto");
 const { Server } = require("socket.io");
 
 const app = express();
@@ -77,6 +78,7 @@ io.on("connection", (socket) => {
 
 
         const newMessage = {
+            id: crypto.randomUUID(),
             sender,
             receiver,
             message: message || "",
@@ -138,6 +140,63 @@ io.on("connection", (socket) => {
         const history = privateMessages[chatId] || [];
 
         socket.emit("chat history", history);
+    });
+
+
+    // =================================
+    // DELETE A SINGLE PRIVATE MESSAGE
+    // =================================
+    // This is a TEMP chat app — nothing is meant to stick around forever.
+    // Only the original sender can delete their own message, and it
+    // disappears for both sides at once.
+
+    socket.on("delete message", ({ sender, receiver, messageId }) => {
+
+        const chatId = [sender, receiver]
+            .sort()
+            .join("_");
+
+        const history = privateMessages[chatId];
+
+        if (!history) {
+
+            return;
+        }
+
+        const index = history.findIndex((m) => m.id === messageId);
+
+        if (index === -1) {
+
+            return;
+        }
+
+        // Only the person who sent it may delete it
+        if (history[index].sender !== socket.username) {
+
+            return;
+        }
+
+        history.splice(index, 1);
+
+        io.to(sender).emit("message deleted", { chatId, messageId });
+        io.to(receiver).emit("message deleted", { chatId, messageId });
+    });
+
+
+    // =================================
+    // CLEAR AN ENTIRE PRIVATE CHAT
+    // =================================
+
+    socket.on("clear chat", ({ sender, receiver }) => {
+
+        const chatId = [sender, receiver]
+            .sort()
+            .join("_");
+
+        privateMessages[chatId] = [];
+
+        io.to(sender).emit("chat cleared", { chatId });
+        io.to(receiver).emit("chat cleared", { chatId });
     });
 
 
@@ -257,6 +316,8 @@ io.on("connection", (socket) => {
 
         const newMessage = {
 
+            id: crypto.randomUUID(),
+
             groupName,
 
             sender: socket.username,
@@ -279,6 +340,67 @@ io.on("connection", (socket) => {
 
         // Send only to group room
         io.to(groupName).emit("group message", newMessage);
+    });
+
+
+    // =================================
+    // DELETE A SINGLE GROUP MESSAGE
+    // =================================
+
+    socket.on("delete group message", ({ groupName, messageId }) => {
+
+        const group = groups[groupName];
+
+        if (!group) {
+
+            return;
+        }
+
+        if (!group.members.includes(socket.username)) {
+
+            return;
+        }
+
+        const index = group.messages.findIndex((m) => m.id === messageId);
+
+        if (index === -1) {
+
+            return;
+        }
+
+        // Only the person who sent it may delete it
+        if (group.messages[index].sender !== socket.username) {
+
+            return;
+        }
+
+        group.messages.splice(index, 1);
+
+        io.to(groupName).emit("group message deleted", { groupName, messageId });
+    });
+
+
+    // =================================
+    // CLEAR AN ENTIRE GROUP CHAT
+    // =================================
+
+    socket.on("clear group chat", ({ groupName }) => {
+
+        const group = groups[groupName];
+
+        if (!group) {
+
+            return;
+        }
+
+        if (!group.members.includes(socket.username)) {
+
+            return;
+        }
+
+        group.messages = [];
+
+        io.to(groupName).emit("group chat cleared", { groupName });
     });
 
 
