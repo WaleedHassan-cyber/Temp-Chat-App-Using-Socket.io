@@ -72,7 +72,7 @@ No frontend framework, no bundler, no database — clone it and run it.
 ### Installation
 
 ```bash
-git clone https://github.com/<your-username>/nexus-chat.git
+git clone https://github.com/WaleedHassan-cyber/Temp-Chat-App-Using-Socket.io.git
 cd nexus-chat
 npm install
 ```
