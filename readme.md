@@ -80,7 +80,7 @@ npm install
 ### Run it
 
 ```bash
-node server.js
+node index.js
 ```
 
 Then open **http://localhost:3000** in two different browser tabs (or two devices on the same network) to chat between them.
